@@ -1,38 +1,30 @@
 import { useState, useEffect } from 'react';
 import { 
   Container, Typography, TextField, Button, Card, CardContent, 
-  CardActions, Grid, Box, AppBar, Toolbar, InputAdornment, CircularProgress 
+  CardActions, Grid, Box, AppBar, Toolbar, IconButton 
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddHomeIcon from '@mui/icons-material/AddHome';
-import SearchIcon from '@mui/icons-material/Search';
 
 function App() {
   const [apartamentos, setApartamentos] = useState([]);
-  const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
   const [nuevoApto, setNuevoApto] = useState({ title: '', location: '', price: '' });
 
   const fetchApartments = () => {
     fetch('http://127.0.0.1:8080/api/apartment/getAll')
       .then(res => res.json())
       .then(data => {
-        // Verificamos que 'data' sea un array antes de hacer reverse
-        setApartamentos(Array.isArray(data) ? [...data].reverse() : []);
+        setApartamentos(data);
         setCargando(false);
       })
-      .catch(err => {
-        console.error("Error:", err);
-        setCargando(false);
-      });
+      .catch(err => setCargando(false));
   };
 
   useEffect(() => { fetchApartments(); }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setEnviando(true);
     fetch('http://127.0.0.1:8080/api/apartment/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -40,13 +32,8 @@ function App() {
     })
     .then(res => res.json())
     .then(data => {
-      setApartamentos([data, ...apartamentos]);
+      setApartamentos([...apartamentos, data]);
       setNuevoApto({ title: '', location: '', price: '' });
-      setEnviando(false);
-    })
-    .catch(err => {
-      alert("Error al crear");
-      setEnviando(false);
     });
   };
 
@@ -57,39 +44,23 @@ function App() {
     }
   };
 
-  // --- LÓGICA DE FILTRADO BLINDADA (Aquí estaba el fallo) ---
-  const apartamentosFiltrados = apartamentos.filter(apt => {
-    // Si apt.title es null o undefined, usamos un string vacío "" para que no explote
-    const titulo = (apt.title || "").toLowerCase();
-    const ubicacion = (apt.location || "").toLowerCase();
-    const termino = (busqueda || "").toLowerCase();
-    
-    return titulo.includes(termino) || ubicacion.includes(termino);
-  });
-
-  if (cargando) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-        <Typography sx={{ ml: 2 }}>Cargando datos de Java...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ flexGrow: 1, bgcolor: '#f5f5f5', minHeight: '100vh', pb: 4 }}>
+      {/* Barra de navegación superior */}
       <AppBar position="static" sx={{ mb: 4 }}>
         <Toolbar>
-          <Typography variant="h6">🏢 Apartment Predictor</Typography>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            🏢 Apartment Predictor
+          </Typography>
         </Toolbar>
       </AppBar>
 
       <Container>
-        {/* FORMULARIO */}
+        {/* Formulario Material UI */}
         <Box component="form" onSubmit={handleSubmit} sx={{ 
-          bgcolor: 'white', p: 3, borderRadius: 2, boxShadow: 1, mb: 4 
+          bgcolor: 'white', p: 3, borderRadius: 2, boxShadow: 3, mb: 5 
         }}>
-          <Typography variant="h5" gutterBottom color="primary" sx={{ mb: 3 }}>
+          <Typography variant="h5" gutterBottom color="primary">
             Registrar Propiedad
           </Typography>
           <Grid container spacing={2}>
@@ -120,56 +91,31 @@ function App() {
             <Grid item xs={12}>
               <Button 
                 fullWidth variant="contained" type="submit" 
-                startIcon={enviando ? <CircularProgress size={20} color="inherit" /> : <AddHomeIcon />} 
-                size="large"
-                disabled={enviando}
+                startIcon={<AddHomeIcon />} size="large"
               >
-                {enviando ? 'Guardando...' : 'Guardar Apartamento'}
+                Guardar Apartamento
               </Button>
             </Grid>
           </Grid>
         </Box>
 
-        {/* BÚSQUEDA */}
-        <Box sx={{ mb: 4 }}>
-          <TextField
-            fullWidth
-            placeholder="Buscar por título o ubicación..."
-            variant="outlined"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ bgcolor: 'white' }}
-          />
-        </Box>
-
-        {/* LISTADO */}
+        {/* Listado en Grid de Material UI */}
         <Grid container spacing={3}>
-          {apartamentosFiltrados.map((apt) => (
+          {apartamentos.map((apt) => (
             <Grid item xs={12} sm={6} md={4} key={apt.id}>
-              <Card sx={{ 
-                height: '100%', display: 'flex', flexDirection: 'column',
-                justifyContent: 'space-between', transition: '0.3s', 
-                '&:hover': { boxShadow: 6, transform: 'translateY(-4px)' } 
-              }}>
-                <CardContent>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    📍 {apt.location || 'Sin ubicación'}
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: '0.3s', '&:hover': { boxShadow: 10 } }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    {apt.title}
                   </Typography>
-                  <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                    {apt.title || 'Sin título'}
+                  <Typography color="text.secondary">
+                    📍 {apt.location}
                   </Typography>
-                  <Typography variant="h5" sx={{ mt: 2, color: '#2e7d32', fontWeight: 'bold' }}>
-                    {new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(apt.price || 0)}
+                  <Typography variant="h5" sx={{ mt: 2, fontWeight: 'bold', color: '#2e7d32' }}>
+                    {apt.price} €
                   </Typography>
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end', pb: 2, pr: 2 }}>
+                <CardActions>
                   <Button 
                     size="small" color="error" startIcon={<DeleteIcon />}
                     onClick={() => eliminarApartamento(apt.id)}
