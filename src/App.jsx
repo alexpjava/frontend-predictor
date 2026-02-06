@@ -19,8 +19,9 @@ function App() {
 
   const estadoInicialFiltros = {
     bedrooms: 'all',
-    airconditioning: 'all',
-    hotwaterheating: 'all'
+    bathrooms: 'all',
+    parking: 'all',
+    airconditioning: 'all'
   };
 
   const [nuevoApto, setNuevoApto] = useState(estadoInicialForm);
@@ -40,22 +41,20 @@ function App() {
 
   useEffect(() => { cargarApartamentos(); }, []);
 
-  // LÓGICA DE FILTRADO DINÁMICO
+  // LÓGICA DE FILTRADO AMPLIADA
   const apartamentosFiltrados = apartamentos.filter(apt => {
     const matchBedrooms = filtros.bedrooms === 'all' || apt.bedrooms === parseInt(filtros.bedrooms);
+    const matchBathrooms = filtros.bathrooms === 'all' || apt.bathrooms === parseInt(filtros.bathrooms);
+    const matchParking = filtros.parking === 'all' || apt.parking === parseInt(filtros.parking);
     const matchAir = filtros.airconditioning === 'all' || apt.airconditioning === filtros.airconditioning;
-    const matchHeat = filtros.hotwaterheating === 'all' || apt.hotwaterheating === filtros.hotwaterheating;
     
-    return matchBedrooms && matchAir && matchHeat;
+    return matchBedrooms && matchBathrooms && matchParking && matchAir;
   });
 
   const handlePopulate = () => {
     const cantidad = prompt("¿Cuántos registros fake deseas crear?", "10");
     if (!cantidad || isNaN(cantidad)) return;
-    fetch(`http://127.0.0.1:8080/api/apartment/populate?qty=${cantidad}`)
-      .then(res => {
-        if (res.ok) { cargarApartamentos(); }
-      });
+    fetch(`http://127.0.0.1:8080/api/apartment/populate?qty=${cantidad}`).then(() => cargarApartamentos());
   };
 
   const handleSubmit = (e) => {
@@ -106,6 +105,7 @@ function App() {
           filtros={filtros} 
           setFiltros={setFiltros} 
           resetFiltros={() => setFiltros(estadoInicialFiltros)} 
+          totalVisibles={apartamentosFiltrados.length}
         />
 
         {cargando ? (
