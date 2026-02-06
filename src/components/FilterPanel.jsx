@@ -1,65 +1,51 @@
-import { Paper, Grid, TextField, MenuItem, Typography, Box, Button } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { Grid, TextField, MenuItem, Paper, Typography } from '@mui/material';
 
-const FilterPanel = ({ filtros, setFiltros, resetFiltros, totalVisibles }) => {
-  
+const FilterPanel = ({ filtros, setFiltros }) => {
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFiltros({ ...filtros, [name]: value });
+    setFiltros({ ...filtros, [e.target.name]: e.target.value });
   };
 
   return (
-    <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 2, bgcolor: '#f8f9fa', borderLeft: '5px solid #1565c0' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FilterListIcon color="primary" />
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Filtros Avanzados</Typography>
-        </Box>
-        <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
-            Mostrando: {totalVisibles} propiedades
-        </Typography>
-      </Box>
-
+    <Paper sx={{ p: 3, mb: 4, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+      <Typography variant="h6" sx={{ mb: 2, color: '#1976d2' }}>Panel de Búsqueda Avanzada</Typography>
       <Grid container spacing={2}>
-        {/* Habitaciones */}
-        <Grid item xs={6} sm={2.4}>
-          <TextField select fullWidth label="Habitaciones" name="bedrooms" value={filtros.bedrooms} onChange={handleChange} size="small">
-            <MenuItem value="all">Cualquiera</MenuItem>
+        <Grid item xs={12} sm={3}>
+          <TextField fullWidth label="Precio Mín" name="minPrice" type="number" value={filtros.minPrice} onChange={handleChange} size="small" />
+        </Grid>
+        <Grid item xs={12} sm={3}>
+          <TextField fullWidth label="Precio Máx" name="maxPrice" type="number" value={filtros.maxPrice} onChange={handleChange} size="small" />
+        </Grid>
+        <Grid item xs={12} sm={2}>
+          <TextField fullWidth label="Habitaciones" name="bedrooms" select value={filtros.bedrooms} onChange={handleChange} size="small">
+            <MenuItem value="">Todas</MenuItem>
             {[1, 2, 3, 4, 5, 6].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
           </TextField>
         </Grid>
-
-        {/* Baños */}
-        <Grid item xs={6} sm={2.4}>
-          <TextField select fullWidth label="Baños" name="bathrooms" value={filtros.bathrooms} onChange={handleChange} size="small">
-            <MenuItem value="all">Cualquiera</MenuItem>
+        <Grid item xs={12} sm={2}>
+          <TextField fullWidth label="Baños" name="bathrooms" select value={filtros.bathrooms} onChange={handleChange} size="small">
+            <MenuItem value="">Todos</MenuItem>
             {[1, 2, 3, 4].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
           </TextField>
         </Grid>
-
-        {/* Parking */}
-        <Grid item xs={6} sm={2.4}>
-          <TextField select fullWidth label="Parking" name="parking" value={filtros.parking} onChange={handleChange} size="small">
-            <MenuItem value="all">Cualquiera</MenuItem>
-            {[0, 1, 2, 3].map(n => <MenuItem key={n} value={n}>{n} plazas</MenuItem>)}
+        <Grid item xs={12} sm={2}>
+          <TextField fullWidth label="Parking" name="parking" select value={filtros.parking} onChange={handleChange} size="small">
+            <MenuItem value="">Todos</MenuItem>
+            {[0, 1, 2, 3].map(n => <MenuItem key={n} value={n}>{n}</MenuItem>)}
           </TextField>
         </Grid>
-
-        {/* Aire Acondicionado */}
-        <Grid item xs={6} sm={2.4}>
-          <TextField select fullWidth label="Aire Acond." name="airconditioning" value={filtros.airconditioning} onChange={handleChange} size="small">
-            <MenuItem value="all">Indiferente</MenuItem>
-            <MenuItem value="yes">Con Aire</MenuItem>
-            <MenuItem value="no">Sin Aire</MenuItem>
+        <Grid item xs={12} sm={4}>
+          <TextField fullWidth label="Aire Acondicionado" name="ac" select value={filtros.ac} onChange={handleChange} size="small">
+            <MenuItem value="all">Todos</MenuItem>
+            <MenuItem value="yes">Con A/C</MenuItem>
+            <MenuItem value="no">Sin A/C</MenuItem>
           </TextField>
         </Grid>
-
-        {/* Botón Reset */}
-        <Grid item xs={12} sm={2.4}>
-          <Button fullWidth variant="outlined" startIcon={<RestartAltIcon />} onClick={resetFiltros} color="error" size="medium">
-            Limpiar
-          </Button>
+        <Grid item xs={12} sm={4}>
+          <TextField fullWidth label="Agua Caliente" name="heating" select value={filtros.heating} onChange={handleChange} size="small">
+            <MenuItem value="all">Todos</MenuItem>
+            <MenuItem value="yes">Con Calefacción</MenuItem>
+            <MenuItem value="no">Sin Calefacción</MenuItem>
+          </TextField>
         </Grid>
       </Grid>
     </Paper>

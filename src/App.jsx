@@ -1,130 +1,115 @@
 import { useState, useEffect } from 'react';
-import { Container, Box, AppBar, Toolbar, Typography, CircularProgress, Button } from '@mui/material';
-import StorageIcon from '@mui/icons-material/Storage';
+// Importaciones de MUI corregidas
+import { Container, Box, Typography, Button, Divider } from '@mui/material';
+
+// Importaciones de componentes locales
 import ApartmentForm from './components/ApartmentForm';
 import ApartmentList from './components/ApartmentList';
 import FilterPanel from './components/FilterPanel';
 
 function App() {
+  // 1. ESTADOS
   const [apartamentos, setApartamentos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
-
-  const estadoInicialForm = {
-    area: '', price: '', bedrooms: '', bathrooms: '', stories: '',
-    mainroad: 'no', guestroom: 'no', basement: 'no',
-    hotwaterheating: 'no', airconditioning: 'no',
-    parking: '', prefarea: 'no', furnishingstatus: 'unfurnished'
-  };
-
-  const estadoInicialFiltros = {
-    bedrooms: 'all',
-    bathrooms: 'all',
-    parking: 'all',
-    airconditioning: 'all'
-  };
-
-  const [nuevoApto, setNuevoApto] = useState(estadoInicialForm);
-  const [filtros, setFiltros] = useState(estadoInicialFiltros);
-  const [editandoId, setEditandoId] = useState(null);
-
-  const cargarApartamentos = () => {
-    setCargando(true);
-    fetch('http://127.0.0.1:8080/api/apartment/getAll')
-      .then(res => res.json())
-      .then(data => {
-        setApartamentos(Array.isArray(data) ? [...data].reverse() : []);
-        setCargando(false);
-      })
-      .catch(() => setCargando(false));
-  };
-
-  useEffect(() => { cargarApartamentos(); }, []);
-
-  // LÓGICA DE FILTRADO AMPLIADA
-  const apartamentosFiltrados = apartamentos.filter(apt => {
-    const matchBedrooms = filtros.bedrooms === 'all' || apt.bedrooms === parseInt(filtros.bedrooms);
-    const matchBathrooms = filtros.bathrooms === 'all' || apt.bathrooms === parseInt(filtros.bathrooms);
-    const matchParking = filtros.parking === 'all' || apt.parking === parseInt(filtros.parking);
-    const matchAir = filtros.airconditioning === 'all' || apt.airconditioning === filtros.airconditioning;
-    
-    return matchBedrooms && matchBathrooms && matchParking && matchAir;
+  const [apartamentoEdit, setApartamentoEdit] = useState(null);
+  const [filtros, setFiltros] = useState({
+    minPrice: '', 
+    maxPrice: '', 
+    bedrooms: '', 
+    bathrooms: '',
+    parking: '',
+    ac: 'all', 
+    heating: 'all'
   });
 
-  const handlePopulate = () => {
-    const cantidad = prompt("¿Cuántos registros fake deseas crear?", "10");
-    if (!cantidad || isNaN(cantidad)) return;
-    fetch(`http://127.0.0.1:8080/api/apartment/populate?qty=${cantidad}`).then(() => cargarApartamentos());
+  const API_URL = "http://127.0.0.1:8080/api/apartment";
+
+  // 2. CARGAR DATOS
+  const cargarApartamentos = async () => {
+    try {
+      const res = await fetch(`${API_URL}/getAll`);
+      if (!res.ok) throw new Error("Error en la respuesta de la red");
+      const data = await res.json();
+      setApartamentos(data);
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+    }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setEnviando(true);
-    const url = editandoId 
-      ? `http://127.0.0.1:8080/api/apartment/updateById?id=${editandoId}` 
-      : 'http://127.0.0.1:8080/api/apartment/create';
-    
-    fetch(url, {
-      method: editandoId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(nuevoApto)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (editandoId) {
-        setApartamentos(apartamentos.map(apt => apt.id === editandoId ? data : apt));
-      } else {
-        setApartamentos([data, ...apartamentos]);
-      }
-      setEditandoId(null);
-      setNuevoApto(estadoInicialForm);
-      setEnviando(false);
-    });
+  useEffect(() => {
+    cargarApartamentos();
+  }, []);
+
+  // 3. ACCIONES
+  const eliminarApartamento = async (id) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este apartamento?")) return;
+    try {
+      await fetch(`${API_URL}/deleteById?id=${id}`, { method: 'DELETE' });
+      cargarApartamentos();
+    } catch (err) {
+      console.error("Error al eliminar:", err);
+    }
   };
 
+  const prepararEdicion = (apt) => {
+    setApartamentoEdit(apt);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePopulate = async () => {
+    try {
+      await fetch(`${API_URL}/populate?qty=5`);
+      cargarApartamentos();
+    } catch (err) {
+      console.error("Error al poblar base de datos:", err);
+    }
+  };
+
+  // 4. RENDERIZADO
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: '#f0f2f5', minHeight: '100vh', pb: 4 }}>
-      <AppBar position="static" sx={{ mb: 4, bgcolor: '#1565c0' }}>
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Typography variant="h6">🏢 Apartment Engine 2026</Typography>
-          <Button variant="contained" color="secondary" startIcon={<StorageIcon />} onClick={handlePopulate}>
-            Popular DB
-          </Button>
-        </Toolbar>
-      </AppBar>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* CABECERA CON BOTÓN DE POBLAR RESTAURADO */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Box>
+          <Typography variant="h3" fontWeight="bold" color="primary">
+            Predictor Engine
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Gestión Inmobiliaria Full-Stack | Alex Picanyol
+          </Typography>
+        </Box>
+        <Button 
+          variant="contained" 
+          color="secondary" 
+          onClick={handlePopulate}
+          sx={{ fontWeight: 'bold' }}
+        >
+          Poblar Base de Datos (5)
+        </Button>
+      </Box>
 
-      <Container>
-        <ApartmentForm 
-          nuevoApto={nuevoApto} setNuevoApto={setNuevoApto} 
-          handleSubmit={handleSubmit} editandoId={editandoId} 
-          cancelarEdicion={() => { setEditandoId(null); setNuevoApto(estadoInicialForm); }} 
-          enviando={enviando} 
-        />
+      {/* FORMULARIO DE ALTA / EDICIÓN */}
+      <ApartmentForm 
+        actualizarLista={cargarApartamentos} 
+        editData={apartamentoEdit} 
+        setEditData={setApartamentoEdit}
+      />
 
-        <FilterPanel 
-          filtros={filtros} 
-          setFiltros={setFiltros} 
-          resetFiltros={() => setFiltros(estadoInicialFiltros)} 
-          totalVisibles={apartamentosFiltrados.length}
-        />
+      <Divider sx={{ my: 4 }} />
 
-        {cargando ? (
-           <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress /></Box>
-        ) : (
-          <ApartmentList 
-            apartamentos={apartamentosFiltrados} 
-            prepararEdicion={(apt) => { setEditandoId(apt.id); setNuevoApto({...apt}); window.scrollTo(0,0); }} 
-            eliminarApartamento={(id) => {
-              if(window.confirm("¿Eliminar?")) {
-                fetch(`http://127.0.0.1:8080/api/apartment/deleteById?id=${id}`, {method: 'DELETE'})
-                .then(() => setApartamentos(apartamentos.filter(a => a.id !== id)));
-              }
-            }} 
-          />
-        )}
-      </Container>
-    </Box>
+      {/* PANEL DE FILTROS COMPLETO */}
+      <FilterPanel filtros={filtros} setFiltros={setFiltros} />
+
+      {/* LISTADO DE RESULTADOS CON REVIEWS */}
+      <ApartmentList 
+        apartamentos={apartamentos} 
+        filtros={filtros}
+        eliminarApartamento={eliminarApartamento}
+        prepararEdicion={prepararEdicion}
+        actualizarLista={cargarApartamentos}
+      />
+    </Container>
   );
 }
 
+// EXPORTACIÓN OBLIGATORIA
 export default App;
