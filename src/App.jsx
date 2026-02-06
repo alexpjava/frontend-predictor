@@ -9,7 +9,16 @@ function App() {
   const [busqueda, setBusqueda] = useState('');
   const [cargando, setCargando] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [nuevoApto, setNuevoApto] = useState({ area: '', price: '', bedrooms: '', bathrooms: '', furnishingstatus: 'unfurnished' });
+
+  // ESTADO INICIAL COMPLETO (Sincronizado con Apartment.java)
+  const estadoInicial = {
+    area: '', price: '', bedrooms: '', bathrooms: '', stories: '',
+    mainroad: 'no', guestroom: 'no', basement: 'no',
+    hotwaterheating: 'no', airconditioning: 'no',
+    parking: '', prefarea: 'no', furnishingstatus: 'unfurnished'
+  };
+
+  const [nuevoApto, setNuevoApto] = useState(estadoInicial);
   const [editandoId, setEditandoId] = useState(null);
 
   useEffect(() => {
@@ -18,8 +27,7 @@ function App() {
       .then(data => {
         setApartamentos(Array.isArray(data) ? [...data].reverse() : []);
         setCargando(false);
-      })
-      .catch(() => setCargando(false));
+      });
   }, []);
 
   const handleSubmit = (e) => {
@@ -42,54 +50,48 @@ function App() {
         setApartamentos([data, ...apartamentos]);
       }
       setEditandoId(null);
-      setNuevoApto({ area: '', price: '', bedrooms: '', bathrooms: '', furnishingstatus: 'unfurnished' });
+      setNuevoApto(estadoInicial);
       setEnviando(false);
     });
   };
 
-  const eliminarApartamento = (id) => {
-    if (window.confirm("¿Borrar?")) {
-      fetch(`http://127.0.0.1:8080/api/apartment/deleteById?id=${id}`, { method: 'DELETE' })
-      .then(() => setApartamentos(apartamentos.filter(apt => apt.id !== id)));
-    }
-  };
-
   const prepararEdicion = (apt) => {
     setEditandoId(apt.id);
-    setNuevoApto({ area: apt.area, price: apt.price, bedrooms: apt.bedrooms, bathrooms: apt.bathrooms, furnishingstatus: apt.furnishingstatus });
+    setNuevoApto({ ...apt }); // Copiamos todos los campos del objeto que viene de Java
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const filtrados = apartamentos.filter(apt => 
-    apt.area?.toString().includes(busqueda) || apt.furnishingstatus?.toLowerCase().includes(busqueda.toLowerCase())
-  );
 
   if (cargando) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}><CircularProgress /></Box>;
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: '#f5f7fa', minHeight: '100vh', pb: 4 }}>
-      <AppBar position="static" sx={{ mb: 4, bgcolor: '#2c3e50' }}>
-        <Toolbar><Typography variant="h6">🏠 Apartment Predictor</Typography></Toolbar>
+    <Box sx={{ flexGrow: 1, bgcolor: '#f0f2f5', minHeight: '100vh', pb: 4 }}>
+      <AppBar position="static" sx={{ mb: 4, bgcolor: '#1565c0' }}>
+        <Toolbar><Typography variant="h6">🏢 Apartment Predictor Engine</Typography></Toolbar>
       </AppBar>
 
       <Container>
         <ApartmentForm 
-          nuevoApto={nuevoApto} 
-          setNuevoApto={setNuevoApto} 
-          handleSubmit={handleSubmit} 
-          editandoId={editandoId} 
-          cancelarEdicion={() => setEditandoId(null)} 
+          nuevoApto={nuevoApto} setNuevoApto={setNuevoApto} 
+          handleSubmit={handleSubmit} editandoId={editandoId} 
+          cancelarEdicion={() => { setEditandoId(null); setNuevoApto(estadoInicial); }} 
           enviando={enviando} 
         />
 
-        <TextField fullWidth sx={{ mb: 4, bgcolor: 'white' }} placeholder="Buscar..." value={busqueda} 
+        <TextField fullWidth sx={{ mb: 4, bgcolor: 'white' }} 
+          placeholder="Buscar por ID, Área o Estado..." 
           onChange={(e) => setBusqueda(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} />
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }} 
+        />
 
         <ApartmentList 
-          apartamentos={filtrados} 
+          apartamentos={apartamentos.filter(a => a.area.toString().includes(busqueda))} 
           prepararEdicion={prepararEdicion} 
-          eliminarApartamento={eliminarApartamento} 
+          eliminarApartamento={(id) => {
+            if(window.confirm("¿Eliminar?")) {
+              fetch(`http://127.0.0.1:8080/api/apartment/deleteById?id=${id}`, {method: 'DELETE'})
+              .then(() => setApartamentos(apartamentos.filter(a => a.id !== id)));
+            }
+          }} 
         />
       </Container>
     </Box>
